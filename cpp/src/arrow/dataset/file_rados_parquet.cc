@@ -20,6 +20,7 @@
 #include "arrow/dataset/dataset_internal.h"
 #include "arrow/dataset/expression.h"
 #include "arrow/dataset/file_base.h"
+#include "arrow/dataset/file_ipc.h"
 #include "arrow/filesystem/filesystem.h"
 #include "arrow/filesystem/path_util.h"
 #include "arrow/filesystem/util_internal.h"
@@ -89,9 +90,8 @@ RadosParquetFileFormat::RadosParquetFileFormat(const std::string& ceph_config_pa
 
 Result<std::shared_ptr<Schema>> RadosParquetFileFormat::Inspect(
     const FileSource& source) const {
-  ARROW_ASSIGN_OR_RAISE(auto reader, GetReader(source));
-  std::shared_ptr<Schema> schema;
-  RETURN_NOT_OK(reader->GetSchema(&schema));
+  auto ipc_format = std::make_shared<IpcFileFormat>();
+  ARROW_ASSIGN_OR_RAISE(auto schema, ipc_format->Inspect(source));
   return schema;
 }
 
