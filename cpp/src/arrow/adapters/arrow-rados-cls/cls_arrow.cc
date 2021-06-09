@@ -20,6 +20,7 @@
 
 #include "arrow/api.h"
 #include "arrow/dataset/dataset.h"
+#include "arrow/dataset/file_ipc.h"
 #include "arrow/dataset/file_parquet.h"
 #include "arrow/dataset/rados_utils.h"
 #include "arrow/io/api.h"
@@ -135,7 +136,7 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
                                    std::shared_ptr<arrow::Table>& t,
                                    int64_t file_size) {
   auto file = std::make_shared<RandomAccessObject>(hctx, file_size);
-  arrow::dataset::FileSource source(file, Compression::LZ4_FRAME);
+  arrow::dataset::FileSource source(file, arrow::util::Compression::LZ4_FRAME);
 
   auto format = std::make_shared<arrow::dataset::IpcFileFormat>();
   ARROW_ASSIGN_OR_RAISE(auto fragment,
@@ -157,7 +158,7 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
   ARROW_RETURN_NOT_OK(file->Close());
   return arrow::Status::OK();
 }
-
+/*
 static arrow::Status ScanParquetObject(cls_method_context_t hctx,
                                        arrow::dataset::Expression filter,
                                        arrow::dataset::Expression partition_expression,
@@ -192,7 +193,7 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   ARROW_RETURN_NOT_OK(file->Close());
   return arrow::Status::OK();
 }
-
+*/
 static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
   // the components required to construct a ParquetFragment.
