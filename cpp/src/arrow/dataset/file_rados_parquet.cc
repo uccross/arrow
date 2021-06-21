@@ -33,6 +33,8 @@
 
 #include "arrow/util/compression.h"
 #include "generated/ScanRequest_generated.h"
+#include <iostream>
+#include <chrono>
 
 namespace arrow {
 
@@ -40,6 +42,19 @@ namespace flatbuf = org::apache::arrow::flatbuf;
 
 namespace dataset {
 
+class MEASURE_EXEC_TIME {
+public:
+    MEASURE_EXEC_TIME(std::string desc) : __start(std::chrono::high_resolution_clock::now()), __desc(desc) {}
+    ~MEASURE_EXEC_TIME() {
+        using namespace std::chrono;
+        high_resolution_clock::time_point end = high_resolution_clock::now();
+        std::chrono::duration<double> dur = duration_cast<std::chrono::duration<double>>(end - __start);
+        std::cout << __desc << ": " << dur.count() * 1000 << " ms" << std::endl;
+    }
+private:
+    std::chrono::high_resolution_clock::time_point __start;
+    std::string __desc;
+};
 /// \brief A ScanTask backed by an RadosParquet file.
 class RadosParquetScanTask : public ScanTask {
  public:
@@ -52,17 +67,29 @@ class RadosParquetScanTask : public ScanTask {
 
   Result<RecordBatchIterator> Execute() override {
     struct stat st {};
-    ARROW_RETURN_NOT_OK(doa_->Stat(source_.path(), st));
-
+    {
+      MEASURE_EXEC_TIME m("[1] stat fragment");
+      ARROW_RETURN_NOT_OK(doa_->Stat(source_.path(), st));
+    }
+    
     ceph::bufferlist request;
-    ARROW_RETURN_NOT_OK(SerializeScanRequest(options_, st.st_size, request));
-
+    {
+      MEASURE_EXEC_TIME m("[2] serialize the scan request");
+      ARROW_RETURN_NOT_OK(SerializeScanRequest(options_, st.st_size, request));
+    }
+    
     ceph::bufferlist result;
-    ARROW_RETURN_NOT_OK(doa_->Exec(st.st_ino, "scan_op", request, result));
+    {
+      MEASURE_EXEC_TIME m("[3] Exec");
+      ARROW_RETURN_NOT_OK(doa_->Exec(st.st_ino, "scan_op", request, result));
+    }
 
-    RecordBatchVector batches;
-    ARROW_RETURN_NOT_OK(DeserializeTable(batches, result));
-    return MakeVectorIterator(batches);
+    {
+      MEASURE_EXEC_TIME m("[4] Deserialze table");
+      RecordBatchVector batches;
+      ARROW_RETURN_NOT_OK(DeserializeTable(batches, result));
+      return MakeVectorIterator(batches);
+    }
   }
 
  protected:
@@ -168,7 +195,8 @@ Status DeserializeScanRequest(compute::Expression* filter, compute::Expression* 
   return Status::OK();
 }
 
-Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl, bool aggressive) {
+Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl, 
+                      bool aggressive) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
 
   ipc::IpcWriteOptions options = ipc::IpcWriteOptions::Defaults();
@@ -180,9 +208,8 @@ Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl, bool 
     codec = Compression::LZ4_FRAME;
   }
 
-  ARROW_ASSIGN_OR_RAISE(
-      options.codec,
-      util::Codec::Create(codec, std::numeric_limits<int>::min()));
+  ARROW_ASSIGN_OR_RAISE(options.codec,
+                        util::Codec::Create(codec, std::numeric_limits<int>::min()));
   ARROW_ASSIGN_OR_RAISE(
       auto writer, ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options));
 
@@ -198,7 +225,7 @@ Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl) {
   auto buffer = std::make_shared<Buffer>((uint8_t*)bl.c_str(), bl.length());
   auto buffer_reader = std::make_shared<io::BufferReader>(buffer);
   auto options = ipc::IpcReadOptions::Defaults();
-  options.use_threads = false;
+  options.use_threads = true;
   ARROW_ASSIGN_OR_RAISE(
       auto reader, arrow::ipc::RecordBatchStreamReader::Open(buffer_reader, options));
   ARROW_RETURN_NOT_OK(reader->ReadAll(&batches));

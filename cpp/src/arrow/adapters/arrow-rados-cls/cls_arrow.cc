@@ -29,11 +29,27 @@
 #include "parquet/arrow/reader.h"
 #include "parquet/file_reader.h"
 
+#include <chrono>
+
 CLS_VER(1, 0)
 CLS_NAME(arrow)
 
 cls_handle_t h_class;
 cls_method_handle_t h_scan_op;
+
+class MEASURE_EXEC_TIME {
+public:
+    MEASURE_EXEC_TIME(std::string desc) : __start(std::chrono::high_resolution_clock::now()), __desc(desc) {}
+    ~MEASURE_EXEC_TIME() {
+        using namespace std::chrono;
+        high_resolution_clock::time_point end = high_resolution_clock::now();
+        std::chrono::duration<double> dur = duration_cast<std::chrono::duration<double>>(end - __start);
+        CLS_LOG(0, "%s: %f ms",  __desc.c_str(),  dur.count()*1000);
+    }
+private:
+    std::chrono::high_resolution_clock::time_point __start;
+    std::string __desc;
+};
 
 /// \class RandomAccessObject
 /// \brief An interface to provide a file-like view over RADOS objects.
@@ -76,7 +92,10 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 
     if (nbytes > 0) {
       ceph::bufferlist* bl = new ceph::bufferlist();
-      cls_cxx_read(hctx_, position, nbytes, bl);
+      {
+        MEASURE_EXEC_TIME m("[4] i/o");
+        cls_cxx_read(hctx_, position, nbytes, bl);
+      }
       chunks_.push_back(bl);
       return std::make_shared<arrow::Buffer>((uint8_t*)bl->c_str(), bl->length());
     }
@@ -199,28 +218,35 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   std::shared_ptr<arrow::Schema> projection_schema;
   std::shared_ptr<arrow::Schema> dataset_schema;
   int64_t file_size;
-
-  // deserialize the scan request
-  if (!arrow::dataset::DeserializeScanRequest(&filter, &partition_expression,
-                                              &projection_schema, &dataset_schema,
-                                              file_size, *in)
-           .ok())
-    return -1;
+  {
+    MEASURE_EXEC_TIME m("[1] deserialize scan request");
+    // deserialize the scan request
+    if (!arrow::dataset::DeserializeScanRequest(&filter, &partition_expression,
+                                                &projection_schema, &dataset_schema,
+                                                file_size, *in)
+            .ok())
+      return -1;
+  }
 
   // scan the parquet object
   std::shared_ptr<arrow::Table> table;
-  arrow::Status s =
-      ScanParquetObject(hctx, filter, partition_expression, projection_schema,
-                        dataset_schema, table, file_size);
-  if (!s.ok()) {
-    CLS_LOG(0, "error: %s", s.message().c_str());
-    return -1;
+  {
+    MEASURE_EXEC_TIME m("[2] scan parquet object");
+    arrow::Status s =
+        ScanParquetObject(hctx, filter, partition_expression, projection_schema,
+                          dataset_schema, table, file_size);
+    if (!s.ok()) {
+      CLS_LOG(0, "error: %s", s.message().c_str());
+      return -1;
+    }
   }
 
   // serialize the resultant table to send back to the client
   ceph::bufferlist bl;
-  if (!arrow::dataset::SerializeTable(table, bl).ok()) return -1;
-
+  {
+    MEASURE_EXEC_TIME m("[3] serialize back table");
+    if (!arrow::dataset::SerializeTable(table, bl).ok()) return -1;
+  }
   *out = bl;
   return 0;
 }

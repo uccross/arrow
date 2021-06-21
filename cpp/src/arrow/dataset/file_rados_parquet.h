@@ -229,8 +229,7 @@ ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
 /// \param[in] aggressive If true, use ZSTD compression instead of LZ4.
 /// \param[out] bl Output bufferlist.
 /// \return Status.
-ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table,
-                                      ceph::bufferlist& bl,
+ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl,
                                       bool aggressive = false);
 
 /// \brief Deserialize the result table from bufferlist.
