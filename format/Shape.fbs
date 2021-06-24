@@ -1,0 +1,8 @@
+namespace org.apache.arrow.flatbuf;
+
+table Shape {
+  num_rows: long;
+  num_columns: long;
+}
+
+root_type Shape;

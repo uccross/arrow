@@ -244,26 +244,27 @@ class ReadableFile::ReadableFileImpl : public OSFile {
   Status Open(int fd) { return OpenReadable(fd); }
 
   Result<std::shared_ptr<Buffer>> ReadBuffer(int64_t nbytes) {
-    ARROW_ASSIGN_OR_RAISE(auto buffer, AllocateResizableBuffer(nbytes, pool_));
-
-    ARROW_ASSIGN_OR_RAISE(int64_t bytes_read, Read(nbytes, buffer->mutable_data()));
-    if (bytes_read < nbytes) {
-      RETURN_NOT_OK(buffer->Resize(bytes_read));
-      buffer->ZeroPadding();
-    }
-    return std::move(buffer);
+    ARROW_ASSIGN_OR_RAISE(int64_t bytes_read, Read(nbytes, buffer_->mutable_data() + pos_));
+    auto buffer_view = std::make_shared<Buffer>(buffer_->mutable_data() + pos_, nbytes);
+    pos_ += bytes_read;
+    return buffer_view;
   }
 
   Result<std::shared_ptr<Buffer>> ReadBufferAt(int64_t position, int64_t nbytes) {
-    ARROW_ASSIGN_OR_RAISE(auto buffer, AllocateResizableBuffer(nbytes, pool_));
+    ARROW_ASSIGN_OR_RAISE(int64_t bytes_read, ReadAt(position, nbytes, buffer_->mutable_data() + pos_));
+    auto buffer_view = std::make_shared<Buffer>(buffer_->mutable_data() + pos_, nbytes);
+    pos_ += bytes_read;
+    return buffer_view;
+  }
 
-    ARROW_ASSIGN_OR_RAISE(int64_t bytes_read,
-                          ReadAt(position, nbytes, buffer->mutable_data()));
-    if (bytes_read < nbytes) {
-      RETURN_NOT_OK(buffer->Resize(bytes_read));
-      buffer->ZeroPadding();
-    }
-    return std::move(buffer);
+  Result<int64_t> Tell() const {
+    RETURN_NOT_OK(CheckClosed());
+    return pos_;
+  }
+
+  Status Seek(int64_t pos) {
+    pos_ = pos;
+    return Status::OK();
   }
 
   Status WillNeed(const std::vector<ReadRange>& ranges) {
@@ -286,6 +287,8 @@ class ReadableFile::ReadableFileImpl : public OSFile {
     }
     return Status::OK();
   }
+  std::shared_ptr<Buffer> buffer_;
+  int64_t pos_;
 
  private:
   MemoryPool* pool_;
@@ -295,9 +298,12 @@ ReadableFile::ReadableFile(MemoryPool* pool) { impl_.reset(new ReadableFileImpl(
 
 ReadableFile::~ReadableFile() { internal::CloseFromDestructor(this); }
 
-Result<std::shared_ptr<ReadableFile>> ReadableFile::Open(const std::string& path,
+Result<std::shared_ptr<ReadableFile>> ReadableFile::Open(const std::string& path, 
+                                                         std::shared_ptr<Buffer> buffer,
                                                          MemoryPool* pool) {
   auto file = std::shared_ptr<ReadableFile>(new ReadableFile(pool));
+  file->impl_->buffer_ = buffer;
+  file->impl_->pos_ = 0;
   RETURN_NOT_OK(file->impl_->Open(path));
   return file;
 }
@@ -335,6 +341,8 @@ Result<std::shared_ptr<Buffer>> ReadableFile::DoRead(int64_t nbytes) {
 }
 
 Result<int64_t> ReadableFile::DoGetSize() { return impl_->size(); }
+
+
 
 Status ReadableFile::DoSeek(int64_t pos) { return impl_->Seek(pos); }
 

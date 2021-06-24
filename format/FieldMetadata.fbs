@@ -1,0 +1,11 @@
+namespace org.apache.arrow.flatbuf;
+
+table FieldMetadata {
+    index: long;
+    offset: long;
+    length: long;
+    type: long;
+    null_count: long;
+}
+
+root_type FieldMetadata;

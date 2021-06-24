@@ -95,6 +95,8 @@ class ARROW_EXPORT Reader {
   /// This function is zero-copy if the file source supports zero-copy reads
   virtual Status Read(const std::vector<std::string>& names,
                       std::shared_ptr<Table>* out) = 0;
+
+  virtual Status SetSource(std::shared_ptr<Buffer> buffer) = 0;
 };
 
 struct ARROW_EXPORT WriteProperties {

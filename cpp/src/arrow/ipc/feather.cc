@@ -50,6 +50,11 @@
 #include "arrow/visitor_inline.h"
 
 #include "generated/feather_generated.h"
+#include "generated/Shape_generated.h"
+#include "generated/FieldMetadata_generated.h"
+
+// 3 instances of ReadAt at Feather V1.
+// 2 for metadata and 1 for data
 
 namespace arrow {
 
@@ -265,7 +270,6 @@ class ReaderV1 : public Reader {
   // @returns: a Buffer instance, the precise type will depend on the kind of
   // input data source (which may or may not have memory-map like semantics)
   Status LoadValues(std::shared_ptr<DataType> type, const fbs::PrimitiveArray* meta,
-                    fbs::TypeMetadata metadata_type, const void* metadata,
                     std::shared_ptr<ArrayData>* out) {
     std::vector<std::shared_ptr<Buffer>> buffers;
 
@@ -273,8 +277,10 @@ class ReaderV1 : public Reader {
     // input source)
     ARROW_ASSIGN_OR_RAISE(auto buffer,
                           source_->ReadAt(meta->offset(), meta->total_bytes()));
-
     int64_t offset = 0;
+    // 1. null_bitmap_size
+    // 2. offsets
+    // 3. data
 
     if (type->id() == Type::DICTIONARY) {
       // Load the index type values
@@ -317,8 +323,7 @@ class ReaderV1 : public Reader {
     const auto& dict_type =
         checked_cast<const DictionaryType&>(*schema_->field(field_index)->type());
 
-    return LoadValues(dict_type.value_type(), dict_meta->levels(),
-                      fbs::TypeMetadata::NONE, nullptr, out);
+    return LoadValues(dict_type.value_type(), dict_meta->levels(), out);
   }
 
   Status GetColumn(int field_index, std::shared_ptr<ChunkedArray>* out) {
@@ -326,8 +331,7 @@ class ReaderV1 : public Reader {
     std::shared_ptr<ArrayData> data;
 
     auto type = schema_->field(field_index)->type();
-    RETURN_NOT_OK(LoadValues(type, col_meta->values(), col_meta->metadata_type(),
-                             col_meta->metadata(), &data));
+    RETURN_NOT_OK(LoadValues(type, col_meta->values(), &data));
 
     if (type->id() == Type::DICTIONARY) {
       RETURN_NOT_OK(GetDictionary(field_index, &data->dictionary));
@@ -337,12 +341,58 @@ class ReaderV1 : public Reader {
     return Status::OK();
   }
 
+  Status SetSource(std::shared_ptr<Buffer> buffer) {
+    contiguous_buffer_ = buffer;
+    pos_ = source_->Tell().ValueOrDie();
+    ARROW_LOG(INFO) << "setting initial source at: " << pos_ << "\n";
+    return Status::OK();
+  }
+
+  Status SetMetadata(uint8_t *source, int size) {
+    memcpy(contiguous_buffer_->mutable_data() + pos_, source, size);
+    pos_ += size;
+    source_->Seek(pos_);
+    return Status::OK();
+  }
+
   Status Read(std::shared_ptr<Table>* out) override {
+    ARROW_LOG(INFO) << "BEGIN:" << source_->Tell().ValueOrDie();
     std::vector<std::shared_ptr<ChunkedArray>> columns;
+    flatbuffers::FlatBufferBuilder shape_builder(1024);
+
+    auto request = flatbuf::CreateShape(shape_builder, metadata_->num_rows(), metadata_->columns()->size());
+    shape_builder.Finish(request);
+    uint8_t* shape_buf = shape_builder.GetBufferPointer();
+    int shape_size = shape_builder.GetSize();
+    SetMetadata(shape_buf, shape_size);
+
+    ARROW_LOG(INFO) << "SET SHAPE METADATA:" << source_->Tell().ValueOrDie();
+
+    for (int i = 0; i < static_cast<int>(metadata_->columns()->size()); ++i) {
+      auto type = schema_->field(i)->type();
+      flatbuffers::FlatBufferBuilder field_builder(1024);
+      auto field_metadata = flatbuf::CreateFieldMetadata(
+        field_builder,
+        i,
+        metadata_->columns()->Get(i)->values()->offset(),
+        metadata_->columns()->Get(i)->values()->length(),
+        type->id(),
+        metadata_->columns()->Get(i)->values()->null_count()
+      );
+      field_builder.Finish(field_metadata);
+      uint8_t* field_buf = field_builder.GetBufferPointer();
+      int field_size = field_builder.GetSize();
+      SetMetadata(field_buf, field_size);
+
+      ARROW_LOG(INFO) << "SET COL METADATA: " << source_->Tell().ValueOrDie();
+    }
+
     for (int i = 0; i < static_cast<int>(metadata_->columns()->size()); ++i) {
       columns.emplace_back();
       RETURN_NOT_OK(GetColumn(i, &columns.back()));
+      ARROW_LOG(INFO) << "SET COL " << i << " DATA: " << source_->Tell().ValueOrDie();
     }
+
     *out = Table::Make(this->schema(), std::move(columns), this->num_rows());
     return Status::OK();
   }
@@ -386,6 +436,8 @@ class ReaderV1 : public Reader {
   }
 
  private:
+  std::shared_ptr<Buffer> contiguous_buffer_;
+  int64_t pos_;
   std::shared_ptr<io::RandomAccessFile> source_;
   std::shared_ptr<Buffer> metadata_buffer_;
   const fbs::CTable* metadata_;
@@ -711,6 +763,8 @@ class ReaderV2 : public Reader {
     schema_ = reader->schema();
     return Status::OK();
   }
+
+  Status SetSource(std::shared_ptr<Buffer> buffer) {return Status::OK();}
 
   int version() const override { return kFeatherV2Version; }
 
