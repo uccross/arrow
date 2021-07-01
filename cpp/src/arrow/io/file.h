@@ -96,6 +96,9 @@ class ARROW_EXPORT ReadableFile
   /// \return ReadableFile instance
   static Result<std::shared_ptr<ReadableFile>> Open(
       const std::string& path, std::shared_ptr<Buffer> buffer, MemoryPool* pool = default_memory_pool());
+  
+  static Result<std::shared_ptr<ReadableFile>> Open(
+      const std::string& path,  MemoryPool* pool = default_memory_pool());
 
   /// \brief Open a local file for reading
   /// \param[in] fd file descriptor

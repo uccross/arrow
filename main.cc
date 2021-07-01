@@ -75,6 +75,8 @@ arrow::Status SimulateClient(
 
     // wrap our raw bytes to a arrow::Buffer
     std::shared_ptr<arrow::Buffer> buffer = std::make_shared<arrow::Buffer>(bytes, length);
+
+    return arrow::Status::OK();
 }
 
 int main() {

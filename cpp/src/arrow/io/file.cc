@@ -308,6 +308,13 @@ Result<std::shared_ptr<ReadableFile>> ReadableFile::Open(const std::string& path
   return file;
 }
 
+Result<std::shared_ptr<ReadableFile>> ReadableFile::Open(const std::string& path, 
+                                                         MemoryPool* pool) {
+  auto file = std::shared_ptr<ReadableFile>(new ReadableFile(pool));
+  RETURN_NOT_OK(file->impl_->Open(path));
+  return file;
+}
+
 Result<std::shared_ptr<ReadableFile>> ReadableFile::Open(int fd, MemoryPool* pool) {
   auto file = std::shared_ptr<ReadableFile>(new ReadableFile(pool));
   RETURN_NOT_OK(file->impl_->Open(fd));
