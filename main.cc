@@ -3,31 +3,6 @@
 #include <arrow/io/api.h>
 #include <iostream>
 
-// this knowledge of types will be present on both client and server.
-/* 
-  BOOL = 0,
-  INT8 = 1,
-  INT16 = 2,
-  INT32 = 3,
-  INT64 = 4,
-  UINT8 = 5,
-  UINT16 = 6,
-  UINT32 = 7,
-  UINT64 = 8,
-  FLOAT = 9,
-  DOUBLE = 10,
-  UTF8 = 11,
-  BINARY = 12,
-  CATEGORY = 13,
-  TIMESTAMP = 14,
-  DATE = 15,
-  TIME = 16,
-  LARGE_UTF8 = 17,
-  LARGE_BINARY = 18,
-  MIN = BOOL,
-  MAX = LARGE_BINARY
-*/
-
 /* To decode every column, We need the offset and length 
 inside the single contiguous buffer, where we can find all 
 the data for that particular column. Also, we need to know 
