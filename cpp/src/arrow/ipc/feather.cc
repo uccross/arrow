@@ -347,7 +347,7 @@ class ReaderV1 : public Reader {
     return Status::OK();
   }
 
-  Status SetMetadata(uint8_t *source, int size) {
+  Status Append(uint8_t *source, int size) {
     memcpy(contiguous_buffer_->mutable_data() + pos_, source, size);
     pos_ += size;
     source_->Seek(pos_);
@@ -363,7 +363,7 @@ class ReaderV1 : public Reader {
     shape_builder.FinishSizePrefixed(request);
     uint8_t* shape_buf = shape_builder.GetBufferPointer();
     int shape_size = shape_builder.GetSize();
-    SetMetadata(shape_buf, shape_size);
+    Append(shape_buf, shape_size);
 
     // ARROW_LOG(INFO) << "SET SHAPE METADATA: " << source_->Tell().ValueOrDie();
     int64_t shape_end_offset = source_->Tell().ValueOrDie();
@@ -386,7 +386,7 @@ class ReaderV1 : public Reader {
       uint8_t* field_buf = field_builder.GetBufferPointer();
       int field_size = field_builder.GetSize();
 
-      SetMetadata(field_buf, field_size);
+      Append(field_buf, field_size);
       // ARROW_LOG(INFO) << "SET COL METADATA: " << source_->Tell().ValueOrDie();
       col_offset += metadata_->columns()->Get(i)->values()->total_bytes();
     }
