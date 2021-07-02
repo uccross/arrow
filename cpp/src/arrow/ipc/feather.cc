@@ -361,12 +361,13 @@ class ReaderV1 : public Reader {
     flatbuffers::FlatBufferBuilder shape_builder(1024);
 
     auto request = flatbuf::CreateShape(shape_builder, metadata_->num_rows(), metadata_->columns()->size());
-    shape_builder.Finish(request);
+    shape_builder.FinishSizePrefixed(request);
     uint8_t* shape_buf = shape_builder.GetBufferPointer();
     int shape_size = shape_builder.GetSize();
+    ARROW_LOG(INFO) << "Shape size: " << shape_size;
     SetMetadata(shape_buf, shape_size);
 
-    ARROW_LOG(INFO) << "SET SHAPE METADATA:" << source_->Tell().ValueOrDie();
+    ARROW_LOG(INFO) << "SET SHAPE METADATA: " << source_->Tell().ValueOrDie();
 
     for (int i = 0; i < static_cast<int>(metadata_->columns()->size()); ++i) {
       auto type = schema_->field(i)->type();
@@ -375,15 +376,16 @@ class ReaderV1 : public Reader {
         field_builder,
         i,
         metadata_->columns()->Get(i)->values()->offset(),
-        metadata_->columns()->Get(i)->values()->length(),
+        metadata_->columns()->Get(i)->values()->total_bytes(),
         type->id(),
         metadata_->columns()->Get(i)->values()->null_count()
       );
-      field_builder.Finish(field_metadata);
+      field_builder.FinishSizePrefixed(field_metadata);
       uint8_t* field_buf = field_builder.GetBufferPointer();
       int field_size = field_builder.GetSize();
-      SetMetadata(field_buf, field_size);
+      ARROW_LOG(INFO) << "Field size: " << field_size;
 
+      SetMetadata(field_buf, field_size);
       ARROW_LOG(INFO) << "SET COL METADATA: " << source_->Tell().ValueOrDie();
     }
 

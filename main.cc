@@ -1,41 +1,52 @@
 #include <arrow/api.h>
 #include <arrow/ipc/api.h>
 #include <arrow/io/api.h>
+#include <arrow/type.h>
+#include "arrow/util/checked_cast.h"
+
 #include <iostream>
 
-/* To decode every column, We need the offset and length 
-inside the single contiguous buffer, where we can find all 
-the data for that particular column. Also, we need to know 
-the name and data type of the column to materialize it as 
-part of a Table. We also need to know the null count and 
-number of values in the column (basically the num rows of 
-the column) to let arrow do it's thing. */
-struct FieldMetadata {
-    std::string name;
-    int64_t offset;
-    int64_t length;
-    int8_t type;
-    int64_t null_count;
-};
+#include <flatbuffers/flatbuffers.h>
+#include "Shape_generated.h"
+#include "FieldMetadata_generated.h"
 
-/* A container to hold the number of rows and cols */
-struct Shape {
-    int64_t num_rows;
-    int64_t num_columns;
-};
-
-/* The column metadata is final metadata consiting of metadata
-of all the fields. We need to this ship this in the single
-contiguous message. */
-using ColumnMetadata = std::vector<std::shared_ptr<FieldMetadata>>;
+namespace flatbuf = org::apache::arrow::flatbuf;
 
 /*
 Arrow tables should always be in this format, no matter 
 where it is on-wire or in memory. We just need to know 
 the beginning of the buffer and the length.
-
-| Shape size | Shape | Col Headers size | Col Headers[] | Garbage | Col Data[] |
+ 
+| Shape (32) | Col Headers (56 * N columns) | Garbage | Col Data |
 */
+
+arrow::Status DecodeArrowTableBuffer(std::shared_ptr<arrow::Buffer> buffer) {
+    auto shape_buffer = arrow::SliceBuffer(buffer, 1342, 40);
+    auto shape_fbs = flatbuf::GetSizePrefixedShape(shape_buffer->data());
+    std::cout << "------------------------------\n";
+    std::cout << "Reading Arrow Table Buffer -\n";
+    std::cout << "------------------------------\n";
+    std::cout << "Num rows: " << shape_fbs->num_rows() << "\n";
+    std::cout << "Num columns: " << shape_fbs->num_columns() << "\n";
+    std::cout << "------------------------------\n";
+
+    int64_t pos = 1342 + 40;
+    for (int64_t i = 0; i < shape_fbs->num_columns(); i++) {
+        int diff = 48;
+        if (i > 0) diff = 56;
+        auto field_meta_buffer = arrow::SliceBuffer(buffer, pos, diff);
+        auto field_meta_fbs = flatbuf::GetSizePrefixedFieldMetadata(field_meta_buffer->data());
+        std::cout << "------------------------------\n";
+        std::cout << "Index:      " << field_meta_fbs->index() << "\n";
+        std::cout << "Length:     " << field_meta_fbs->length() << "\n";
+        std::cout << "Offset:     " << field_meta_fbs->offset() << "\n";
+        std::cout << "Null count: " << field_meta_fbs->null_count() << "\n";
+        std::cout << "Type: " << field_meta_fbs->type() << "\n";
+        std::cout << "------------------------------\n";
+        pos += diff;
+    }
+    return arrow::Status::OK();
+}
 
 arrow::Status Driver() {
     // read into a contiguous buffer
@@ -57,24 +68,14 @@ arrow::Status Driver() {
     auto tablereader = std::make_shared<arrow::TableBatchReader>(*table);
     tablereader->ReadAll(&batches);
     std::cout << "Num batches: " << batches.size() << "\n";
-    std::cout << table->ToString() << "\n";
+    // std::cout << table->ToString() << "\n";
     // if this is 1, then only 1 chunk per chunk array
 
     
     // so the end product is 
     // buffer->data() and buffer->size()
 
-    return arrow::Status::OK();
-}
-
-/*
-schema, bytes, length. that's all what we got on the client
-*/
-arrow::Status SimulateClient(
-    std::shared_ptr<arrow::Schema> schema, uint8_t *bytes, int64_t length) {
-
-    // wrap our raw bytes to a arrow::Buffer
-    std::shared_ptr<arrow::Buffer> buffer = std::make_shared<arrow::Buffer>(bytes, length);
+    DecodeArrowTableBuffer(buffer);
 
     return arrow::Status::OK();
 }
