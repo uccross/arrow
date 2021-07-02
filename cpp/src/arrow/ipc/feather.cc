@@ -344,7 +344,6 @@ class ReaderV1 : public Reader {
   Status SetSource(std::shared_ptr<Buffer> buffer) {
     contiguous_buffer_ = buffer;
     pos_ = source_->Tell().ValueOrDie();
-    ARROW_LOG(INFO) << "setting initial source at: " << pos_ << "\n";
     return Status::OK();
   }
 
@@ -364,35 +363,38 @@ class ReaderV1 : public Reader {
     shape_builder.FinishSizePrefixed(request);
     uint8_t* shape_buf = shape_builder.GetBufferPointer();
     int shape_size = shape_builder.GetSize();
-    ARROW_LOG(INFO) << "Shape size: " << shape_size;
     SetMetadata(shape_buf, shape_size);
 
-    ARROW_LOG(INFO) << "SET SHAPE METADATA: " << source_->Tell().ValueOrDie();
+    // ARROW_LOG(INFO) << "SET SHAPE METADATA: " << source_->Tell().ValueOrDie();
+    int64_t shape_end_offset = source_->Tell().ValueOrDie();
+    int64_t field_meta_end_offset = shape_end_offset + 64 + (72 * (metadata_->columns()->size()-1));
 
+    int64_t col_offset = field_meta_end_offset;
     for (int i = 0; i < static_cast<int>(metadata_->columns()->size()); ++i) {
       auto type = schema_->field(i)->type();
       flatbuffers::FlatBufferBuilder field_builder(1024);
       auto field_metadata = flatbuf::CreateFieldMetadata(
         field_builder,
         i,
-        metadata_->columns()->Get(i)->values()->offset(),
+        col_offset,
         metadata_->columns()->Get(i)->values()->total_bytes(),
+        metadata_->columns()->Get(i)->values()->length(),
         type->id(),
         metadata_->columns()->Get(i)->values()->null_count()
       );
       field_builder.FinishSizePrefixed(field_metadata);
       uint8_t* field_buf = field_builder.GetBufferPointer();
       int field_size = field_builder.GetSize();
-      ARROW_LOG(INFO) << "Field size: " << field_size;
 
       SetMetadata(field_buf, field_size);
-      ARROW_LOG(INFO) << "SET COL METADATA: " << source_->Tell().ValueOrDie();
+      // ARROW_LOG(INFO) << "SET COL METADATA: " << source_->Tell().ValueOrDie();
+      col_offset += metadata_->columns()->Get(i)->values()->total_bytes();
     }
 
     for (int i = 0; i < static_cast<int>(metadata_->columns()->size()); ++i) {
       columns.emplace_back();
       RETURN_NOT_OK(GetColumn(i, &columns.back()));
-      ARROW_LOG(INFO) << "SET COL " << i << " DATA: " << source_->Tell().ValueOrDie();
+      // ARROW_LOG(INFO) << "SET COL " << i << " DATA: " << source_->Tell().ValueOrDie();
     }
 
     *out = Table::Make(this->schema(), std::move(columns), this->num_rows());

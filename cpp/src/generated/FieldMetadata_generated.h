@@ -12,20 +12,26 @@ namespace arrow {
 namespace flatbuf {
 
 struct FieldMetadata;
+struct FieldMetadataBuilder;
 
 struct FieldMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef FieldMetadataBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_INDEX = 4,
     VT_OFFSET = 6,
-    VT_LENGTH = 8,
-    VT_TYPE = 10,
-    VT_NULL_COUNT = 12
+    VT_TOTAL_BYTES = 8,
+    VT_LENGTH = 10,
+    VT_TYPE = 12,
+    VT_NULL_COUNT = 14
   };
   int64_t index() const {
     return GetField<int64_t>(VT_INDEX, 0);
   }
   int64_t offset() const {
     return GetField<int64_t>(VT_OFFSET, 0);
+  }
+  int64_t total_bytes() const {
+    return GetField<int64_t>(VT_TOTAL_BYTES, 0);
   }
   int64_t length() const {
     return GetField<int64_t>(VT_LENGTH, 0);
@@ -40,6 +46,7 @@ struct FieldMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<int64_t>(verifier, VT_INDEX) &&
            VerifyField<int64_t>(verifier, VT_OFFSET) &&
+           VerifyField<int64_t>(verifier, VT_TOTAL_BYTES) &&
            VerifyField<int64_t>(verifier, VT_LENGTH) &&
            VerifyField<int64_t>(verifier, VT_TYPE) &&
            VerifyField<int64_t>(verifier, VT_NULL_COUNT) &&
@@ -48,6 +55,7 @@ struct FieldMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct FieldMetadataBuilder {
+  typedef FieldMetadata Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_index(int64_t index) {
@@ -55,6 +63,9 @@ struct FieldMetadataBuilder {
   }
   void add_offset(int64_t offset) {
     fbb_.AddElement<int64_t>(FieldMetadata::VT_OFFSET, offset, 0);
+  }
+  void add_total_bytes(int64_t total_bytes) {
+    fbb_.AddElement<int64_t>(FieldMetadata::VT_TOTAL_BYTES, total_bytes, 0);
   }
   void add_length(int64_t length) {
     fbb_.AddElement<int64_t>(FieldMetadata::VT_LENGTH, length, 0);
@@ -69,7 +80,6 @@ struct FieldMetadataBuilder {
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  FieldMetadataBuilder &operator=(const FieldMetadataBuilder &);
   flatbuffers::Offset<FieldMetadata> Finish() {
     const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<FieldMetadata>(end);
@@ -81,6 +91,7 @@ inline flatbuffers::Offset<FieldMetadata> CreateFieldMetadata(
     flatbuffers::FlatBufferBuilder &_fbb,
     int64_t index = 0,
     int64_t offset = 0,
+    int64_t total_bytes = 0,
     int64_t length = 0,
     int64_t type = 0,
     int64_t null_count = 0) {
@@ -88,6 +99,7 @@ inline flatbuffers::Offset<FieldMetadata> CreateFieldMetadata(
   builder_.add_null_count(null_count);
   builder_.add_type(type);
   builder_.add_length(length);
+  builder_.add_total_bytes(total_bytes);
   builder_.add_offset(offset);
   builder_.add_index(index);
   return builder_.Finish();
