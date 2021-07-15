@@ -111,5 +111,5 @@ Arrow tables should always be in this format, no matter
 where it is on-wire or in memory. We just need to know 
 the beginning of the buffer and the length.
  
-| Shape (32) | Col Headers (56 * N columns) | Garbage | Col Data |
+| Shape {num_rows,num_cols} | Col 0 Header{offset,length} | Col 1 Header{offset,length} | .... | Col 0 Buffer | Col 1 Buffer | .... |
 */
