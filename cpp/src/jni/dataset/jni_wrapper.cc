@@ -20,6 +20,7 @@
 #include "arrow/array.h"
 #include "arrow/dataset/api.h"
 #include "arrow/dataset/file_base.h"
+#include "arrow/dataset/file_rados_parquet.h"
 #include "arrow/filesystem/localfs.h"
 #include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
