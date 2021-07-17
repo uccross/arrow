@@ -47,10 +47,8 @@ add_arrow_lib(arrow_dataset_jni
               ARROW_DATASET_JNI_LIBRARIES
               SHARED_PRIVATE_LINK_LIBS
               ${ARROW_DATASET_JNI_LIBS}
-              ${ARROW_DATASET_LINK_SHARED}
               STATIC_LINK_LIBS
               ${ARROW_DATASET_JNI_LIBS}
-              ${ARROW_DATASET_LINK_STATIC}
               EXTRA_INCLUDES
               ${JNI_HEADERS_DIR}
               PRIVATE_INCLUDES
