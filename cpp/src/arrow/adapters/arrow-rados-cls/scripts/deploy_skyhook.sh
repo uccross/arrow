@@ -105,8 +105,7 @@ fi
 if [[ "${BUILD_JAVA_BINDINGS}" == "true" ]]; then
     apt install -y default-jdk maven
     cd /tmp/arrow/java
-    mvn clean install
-    mvn clean install -P arrow-jni -pl format,memory,vector -am -Darrow.cpp.build.dir=/tmp/arrow/cpp/build/release -Dmaven.test.skip=true -Dcheckstyle.skip -Dos.detected.name=linux -Dos.detected.arch=x86_64 -Dos.detected.classifier=linux-x86_64
+    mvn clean install package -P arrow-jni -pl dataset,format,memory,vector -am -Darrow.cpp.build.dir=/tmp/arrow/cpp/build/release -Dmaven.test.skip=true -Dcheckstyle.skip -Dos.detected.name=linux -Dos.detected.arch=x86_64 -Dos.detected.classifier=linux-x86_64
 fi
 
 export LD_LIBRARY_PATH=/usr/local/lib
