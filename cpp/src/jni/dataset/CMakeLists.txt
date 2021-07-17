@@ -58,7 +58,7 @@ add_arrow_lib(arrow_dataset_jni
               arrow_dataset_java)
 
 add_dependencies(arrow_dataset_jni ${ARROW_DATASET_JNI_LIBRARIES})
-add_dependencies(arrow_static ${ARROW_DATASET_LINK_STATIC})
+add_dependencies(arrow_dataset_static ${ARROW_DATASET_LINK_STATIC})
 
 add_arrow_test(dataset_jni_test
                SOURCES
