@@ -14,7 +14,7 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-#include "arrow/dataset/file_rados_parquet.h"
+#include "arrow/dataset/file_skyhook.h"
 
 #include "arrow/api.h"
 #include "arrow/compute/exec/expression.h"

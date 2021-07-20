@@ -24,7 +24,7 @@
 #include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/file_base.h"
-#include "arrow/dataset/file_rados_parquet.h"
+#include "arrow/dataset/file_skyhook.h"
 #include "arrow/filesystem/api.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"

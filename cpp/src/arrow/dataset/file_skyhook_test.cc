@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "arrow/dataset/file_rados_parquet.h"
+#include "arrow/dataset/file_skyhook.h"
 #include "arrow/api.h"
 #include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/scanner.h"
