@@ -28,6 +28,7 @@ cdef class SkyhookFileFormat(FileFormat):
 
     Parameters
     ---------
+    file_format: The underlying file format to use.
     ceph_config_path: The path to the Ceph config file.
     data_pool: Name of the CephFS data pool.
     user_name: The username accessing the Ceph cluster.

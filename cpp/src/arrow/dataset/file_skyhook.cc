@@ -80,7 +80,9 @@ SkyhookFileFormat::SkyhookFileFormat(const std::string& format,
                                      const std::string& cls_name)
     : SkyhookFileFormat(std::make_shared<connection::RadosConnection>(
           connection::RadosConnection::RadosConnectionCtx(
-              ceph_config_path, data_pool, user_name, cluster_name, cls_name))) {}
+              ceph_config_path, data_pool, user_name, cluster_name, cls_name))) {
+                format_ = format;
+              }
 
 SkyhookFileFormat::SkyhookFileFormat(
     const std::shared_ptr<connection::RadosConnection>& connection) {
