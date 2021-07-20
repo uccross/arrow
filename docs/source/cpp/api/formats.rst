@@ -95,8 +95,8 @@ Parquet writer
 .. doxygenclass:: parquet::StreamWriter
    :members:
 
-Rados Parquet
-=============
+Skyhook
+=======
 
 .. doxygenclass:: arrow::dataset::SkyhookFileFormat
    :members:
