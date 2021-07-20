@@ -210,9 +210,9 @@ class ARROW_DS_EXPORT DirectObjectAccess {
 /// scan operations to the Ceph OSDs
 class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
  public:
-  SkyhookFileFormat(const std::string& ceph_config_path,
-                         const std::string& data_pool, const std::string& user_name,
-                         const std::string& cluster_name, const std::string& cls_name);
+  SkyhookFileFormat(const std::string& format, const std::string& ceph_config_path,
+                    const std::string& data_pool, const std::string& user_name,
+                    const std::string& cluster_name, const std::string& cls_name);
 
   explicit SkyhookFileFormat(
       const std::shared_ptr<connection::RadosConnection>& conn);
@@ -253,6 +253,7 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
 
  protected:
   std::shared_ptr<DirectObjectAccess> doa_;
+  std::string format_; 
 };
 
 /// \brief Serialize scan request to a bufferlist.

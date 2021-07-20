@@ -38,6 +38,7 @@ cdef class SkyhookFileFormat(FileFormat):
 
     def __init__(
         self,
+        file_format="parquet",
         ceph_config_path="/etc/ceph/ceph.conf",
         data_pool="cephfs_data",
         user_name="client.admin",
@@ -46,6 +47,7 @@ cdef class SkyhookFileFormat(FileFormat):
     ):
         self.init(shared_ptr[CFileFormat](
             new CSkyhookFileFormat(
+                tobytes(file_format),
                 tobytes(ceph_config_path),
                 tobytes(data_pool),
                 tobytes(user_name),

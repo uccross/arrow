@@ -44,7 +44,7 @@ std::shared_ptr<arrow::dataset::SkyhookFileFormat> GetRadosParquetFormat() {
   std::string cluster_name = "ceph";
   std::string cls_name = "arrow";
   return std::make_shared<arrow::dataset::SkyhookFileFormat>(
-      ceph_config_path, data_pool, user_name, cluster_name, cls_name);
+      "parquet", ceph_config_path, data_pool, user_name, cluster_name, cls_name);
 }
 
 std::shared_ptr<arrow::dataset::ParquetFileFormat> GetParquetFormat() {

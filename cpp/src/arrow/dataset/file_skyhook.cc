@@ -70,11 +70,12 @@ class RadosParquetScanTask : public ScanTask {
   std::shared_ptr<DirectObjectAccess> doa_;
 };
 
-SkyhookFileFormat::SkyhookFileFormat(const std::string& ceph_config_path,
-                                               const std::string& data_pool,
-                                               const std::string& user_name,
-                                               const std::string& cluster_name,
-                                               const std::string& cls_name)
+SkyhookFileFormat::SkyhookFileFormat(const std::string& format,
+                                     const std::string& ceph_config_path,
+                                     const std::string& data_pool,
+                                     const std::string& user_name,
+                                     const std::string& cluster_name,
+                                     const std::string& cls_name)
     : SkyhookFileFormat(std::make_shared<connection::RadosConnection>(
           connection::RadosConnection::RadosConnectionCtx(
               ceph_config_path, data_pool, user_name, cluster_name, cls_name))) {}
@@ -88,9 +89,16 @@ SkyhookFileFormat::SkyhookFileFormat(
 
 Result<std::shared_ptr<Schema>> SkyhookFileFormat::Inspect(
     const FileSource& source) const {
-  ARROW_ASSIGN_OR_RAISE(auto reader, GetReader(source));
+  std::shared_ptr<FileFormat> format;
+  if (format_ == "parquet") {
+    format = std::make_shared<ParquetFileFormat>();
+  } else if (format_ == "ipc") {
+    format = std::make_shared<IpcFileFormat>();
+  } else {
+    return Status::Invalid("invalid file format");
+  }
   std::shared_ptr<Schema> schema;
-  RETURN_NOT_OK(reader->GetSchema(&schema));
+  ARROW_ASSIGN_OR_RAISE(schema, format->Inspect(source));
   return schema;
 }
 

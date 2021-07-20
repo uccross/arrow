@@ -253,7 +253,7 @@ def _ensure_format(obj):
     elif obj == "csv":
         return CsvFileFormat()
     elif obj == "skyhook":
-        return SkyhookFileFormat("/etc/ceph/ceph.conf", "cephfs_data")
+        return SkyhookFileFormat()
     else:
         raise ValueError("format '{}' is not supported".format(obj))
 
