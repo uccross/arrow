@@ -110,6 +110,11 @@ Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
   std::shared_ptr<ScanOptions> options_ = std::make_shared<ScanOptions>(*options);
   options_->partition_expression = file->partition_expression();
   options_->dataset_schema = file->dataset_schema();
+
+  int64_t file_format = -1;
+  if (format_ == "parquet") options_->file_format = 0;
+  if (format_ == "ipc") options_->file_format = 1;
+
   ScanTaskVector v{std::make_shared<RadosParquetScanTask>(
       std::move(options_), std::move(file), file->source(), std::move(doa_))};
   return MakeVectorIterator(v);
