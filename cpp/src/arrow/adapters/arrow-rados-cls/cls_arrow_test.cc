@@ -37,7 +37,7 @@
 #include "parquet/arrow/reader.h"
 #include "parquet/arrow/writer.h"
 
-std::shared_ptr<arrow::dataset::SkyhookFileFormat> GetRadosParquetFormat() {
+std::shared_ptr<arrow::dataset::SkyhookFileFormat> GetSkyhookFormat() {
   std::string ceph_config_path = "/etc/ceph/ceph.conf";
   std::string data_pool = "cephfs_data";
   std::string user_name = "client.admin";
@@ -114,7 +114,7 @@ TEST(TestArrowRadosCLS, SelectEntireDataset) {
       GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
   auto table_parquet = scanner->ToTable().ValueOrDie();
 
-  format = GetRadosParquetFormat();
+  format = GetSkyhookFormat();
   dataset = GetDatasetFromPath(fs, format, path);
   scanner = GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
   auto table_rados_parquet = scanner->ToTable().ValueOrDie();
@@ -134,7 +134,7 @@ TEST(TestArrowRadosCLS, SelectFewRows) {
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
   auto table_parquet = scanner->ToTable().ValueOrDie();
 
-  format = GetRadosParquetFormat();
+  format = GetSkyhookFormat();
   dataset = GetDatasetFromPath(fs, format, path);
   scanner = GetScannerFromDataset(dataset, columns, filter, true);
   auto table_rados_parquet = scanner->ToTable().ValueOrDie();
@@ -154,7 +154,7 @@ TEST(TestArrowRadosCLS, SelectFewColumns) {
       GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
   auto table_parquet = scanner->ToTable().ValueOrDie();
 
-  format = GetRadosParquetFormat();
+  format = GetSkyhookFormat();
   dataset = GetDatasetFromPath(fs, format, path);
   scanner = GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
   auto table_rados_parquet = scanner->ToTable().ValueOrDie();
@@ -175,7 +175,7 @@ TEST(TestArrowRadosCLS, SelectRowsAndColumnsOnPartitionKey) {
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
   auto table_parquet = scanner->ToTable().ValueOrDie();
 
-  format = GetRadosParquetFormat();
+  format = GetSkyhookFormat();
   dataset = GetDatasetFromPath(fs, format, path);
   scanner = GetScannerFromDataset(dataset, columns, filter, true);
   auto table_rados_parquet = scanner->ToTable().ValueOrDie();
@@ -199,7 +199,7 @@ TEST(TestArrowRadosCLS, SelectRowsAndColumnsOnlyOnPartitionKey) {
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
   auto table_parquet = scanner->ToTable().ValueOrDie();
 
-  format = GetRadosParquetFormat();
+  format = GetSkyhookFormat();
   dataset = GetDatasetFromPath(fs, format, path);
   scanner = GetScannerFromDataset(dataset, columns, filter, true);
   auto table_rados_parquet = scanner->ToTable().ValueOrDie();

@@ -42,10 +42,10 @@ namespace flatbuf = org::apache::arrow::flatbuf;
 
 namespace dataset {
 
-/// \brief A ScanTask backed by an RadosParquet file.
-class RadosParquetScanTask : public ScanTask {
+/// \brief A ScanTask to scan a file fragment in Skyhook format.
+class SkyhookScanTask : public ScanTask {
  public:
-  RadosParquetScanTask(std::shared_ptr<ScanOptions> options,
+  SkyhookScanTask(std::shared_ptr<ScanOptions> options,
                        std::shared_ptr<Fragment> fragment, FileSource source,
                        std::shared_ptr<DirectObjectAccess> doa)
       : ScanTask(std::move(options), std::move(fragment)),
@@ -114,7 +114,7 @@ Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
   if (format_ == "parquet") options_->file_format = 0;
   if (format_ == "ipc") options_->file_format = 1;
 
-  ScanTaskVector v{std::make_shared<RadosParquetScanTask>(
+  ScanTaskVector v{std::make_shared<SkyhookScanTask>(
       std::move(options_), std::move(file), file->source(), std::move(doa_))};
   return MakeVectorIterator(v);
 }
