@@ -111,7 +111,6 @@ Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
   options_->partition_expression = file->partition_expression();
   options_->dataset_schema = file->dataset_schema();
 
-  int64_t file_format = -1;
   if (format_ == "parquet") options_->file_format = 0;
   if (format_ == "ipc") options_->file_format = 1;
 
