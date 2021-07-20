@@ -52,7 +52,7 @@ std::shared_ptr<arrow::Table> CreateTable() {
   return arrow::Table::Make(schema, {array_a, array_b, array_c});
 }
 
-TEST(TestRadosParquetFileFormat, ScanRequestSerializeDeserialize) {
+TEST(TestSkyhookFileFormat, ScanRequestSerializeDeserialize) {
   std::shared_ptr<ScanOptions> options = std::make_shared<ScanOptions>();
   options->projected_schema = arrow::schema({arrow::field("a", arrow::int64())});
   options->dataset_schema = arrow::schema({arrow::field("a", arrow::int64())});
@@ -79,7 +79,7 @@ TEST(TestRadosParquetFileFormat, ScanRequestSerializeDeserialize) {
   ASSERT_EQ(file_format_, options->file_format);
 }
 
-TEST(TestRadosParquetFileFormat, SerializeDeserializeTable) {
+TEST(TestSkyhookFileFormat, SerializeDeserializeTable) {
   std::shared_ptr<Table> table = CreateTable();
   ceph::bufferlist bl;
   SerializeTable(table, bl);

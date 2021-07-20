@@ -32,8 +32,8 @@ if __name__ == "__main__":
     workers = int(sys.argv[4])
     resultfile = str(sys.argv[5])
 
-    if fmt == "rpq":
-        format_ = "rados-parquet"
+    if fmt == "sky":
+        format_ = "skyhook"
     elif fmt == "pq":
         format_ = "parquet"
     elif fmt == "ipc":

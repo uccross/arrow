@@ -27,10 +27,10 @@ from pyarrow.lib cimport _Weakrefable
 
 cdef extern from "arrow/dataset/file_rados_parquet.h" \
         namespace "arrow::dataset" nogil:
-    cdef cppclass CRadosParquetFileFormat \
-        "arrow::dataset::RadosParquetFileFormat"(
+    cdef cppclass CSkyhookFileFormat \
+        "arrow::dataset::SkyhookFileFormat"(
             CFileFormat):
-        CRadosParquetFileFormat(
+        CSkyhookFileFormat(
             c_string ceph_config_path,
             c_string data_pool,
             c_string user_name,

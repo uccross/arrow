@@ -21,7 +21,7 @@ from pyarrow._dataset cimport FileFormat
 from pyarrow.lib cimport *
 from pyarrow.lib import frombytes, tobytes
 
-cdef class RadosParquetFileFormat(FileFormat):
+cdef class SkyhookFileFormat(FileFormat):
     """
     A ParquetFileFormat implementation that offloads the fragment
     scan operations to the Ceph OSDs.
@@ -34,7 +34,7 @@ cdef class RadosParquetFileFormat(FileFormat):
     cluster_name: Name of the cluster.
     """
     cdef:
-        CRadosParquetFileFormat* rados_parquet_format
+        CSkyhookFileFormat* rados_parquet_format
 
     def __init__(
         self,
@@ -45,7 +45,7 @@ cdef class RadosParquetFileFormat(FileFormat):
         cls_name="arrow"
     ):
         self.init(shared_ptr[CFileFormat](
-            new CRadosParquetFileFormat(
+            new CSkyhookFileFormat(
                 tobytes(ceph_config_path),
                 tobytes(data_pool),
                 tobytes(user_name),
@@ -56,4 +56,4 @@ cdef class RadosParquetFileFormat(FileFormat):
 
     cdef void init(self, const shared_ptr[CFileFormat]& sp):
         FileFormat.init(self, sp)
-        self.rados_parquet_format = <CRadosParquetFileFormat*> sp.get()
+        self.rados_parquet_format = <CSkyhookFileFormat*> sp.get()

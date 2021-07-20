@@ -70,23 +70,23 @@ class RadosParquetScanTask : public ScanTask {
   std::shared_ptr<DirectObjectAccess> doa_;
 };
 
-RadosParquetFileFormat::RadosParquetFileFormat(const std::string& ceph_config_path,
+SkyhookFileFormat::SkyhookFileFormat(const std::string& ceph_config_path,
                                                const std::string& data_pool,
                                                const std::string& user_name,
                                                const std::string& cluster_name,
                                                const std::string& cls_name)
-    : RadosParquetFileFormat(std::make_shared<connection::RadosConnection>(
+    : SkyhookFileFormat(std::make_shared<connection::RadosConnection>(
           connection::RadosConnection::RadosConnectionCtx(
               ceph_config_path, data_pool, user_name, cluster_name, cls_name))) {}
 
-RadosParquetFileFormat::RadosParquetFileFormat(
+SkyhookFileFormat::SkyhookFileFormat(
     const std::shared_ptr<connection::RadosConnection>& connection) {
   connection->connect();
   auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>(connection);
   doa_ = doa;
 }
 
-Result<std::shared_ptr<Schema>> RadosParquetFileFormat::Inspect(
+Result<std::shared_ptr<Schema>> SkyhookFileFormat::Inspect(
     const FileSource& source) const {
   ARROW_ASSIGN_OR_RAISE(auto reader, GetReader(source));
   std::shared_ptr<Schema> schema;
@@ -94,7 +94,7 @@ Result<std::shared_ptr<Schema>> RadosParquetFileFormat::Inspect(
   return schema;
 }
 
-Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
+Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
     const std::shared_ptr<ScanOptions>& options,
     const std::shared_ptr<FileFragment>& file) const {
   std::shared_ptr<ScanOptions> options_ = std::make_shared<ScanOptions>(*options);
