@@ -35,7 +35,7 @@ def test_dataset_discovery():
         return
     rados_parquet_dataset = ds.dataset(
         "file:///mnt/cephfs/nyc/",
-        format="rados-parquet"
+        format="skyhook"
     )
     parquet_dataset = ds.dataset(
         "file:///mnt/cephfs/nyc/",
@@ -52,7 +52,7 @@ def test_without_partition_pruning():
         return
     rados_parquet_dataset = ds.dataset(
         "file:///mnt/cephfs/nyc/",
-        format=ds.RadosParquetFileFormat("/etc/ceph/ceph.conf")
+        format="skyhook"
     )
     parquet_dataset = ds.dataset(
         "file:///mnt/cephfs/nyc/",
@@ -87,7 +87,7 @@ def test_with_partition_pruning():
     rados_parquet_dataset = ds.dataset(
         "file:///mnt/cephfs/nyc/",
         partitioning=partitioning,
-        format=ds.RadosParquetFileFormat("/etc/ceph/ceph.conf")
+        format="skyhook"
     )
     parquet_dataset = ds.dataset(
         "file:///mnt/cephfs/nyc/",

@@ -14,12 +14,14 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-#include "arrow/dataset/file_rados_parquet.h"
+#include "arrow/dataset/file_skyhook.h"
 
 #include "arrow/api.h"
 #include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/dataset_internal.h"
 #include "arrow/dataset/file_base.h"
+#include "arrow/dataset/file_ipc.h"
+#include "arrow/dataset/file_parquet.h"
 #include "arrow/filesystem/filesystem.h"
 #include "arrow/filesystem/path_util.h"
 #include "arrow/filesystem/util_internal.h"
@@ -40,10 +42,10 @@ namespace flatbuf = org::apache::arrow::flatbuf;
 
 namespace dataset {
 
-/// \brief A ScanTask backed by an RadosParquet file.
-class RadosParquetScanTask : public ScanTask {
+/// \brief A ScanTask to scan a file fragment in Skyhook format.
+class SkyhookScanTask : public ScanTask {
  public:
-  RadosParquetScanTask(std::shared_ptr<ScanOptions> options,
+  SkyhookScanTask(std::shared_ptr<ScanOptions> options,
                        std::shared_ptr<Fragment> fragment, FileSource source,
                        std::shared_ptr<DirectObjectAccess> doa)
       : ScanTask(std::move(options), std::move(fragment)),
@@ -70,37 +72,51 @@ class RadosParquetScanTask : public ScanTask {
   std::shared_ptr<DirectObjectAccess> doa_;
 };
 
-RadosParquetFileFormat::RadosParquetFileFormat(const std::string& ceph_config_path,
-                                               const std::string& data_pool,
-                                               const std::string& user_name,
-                                               const std::string& cluster_name,
-                                               const std::string& cls_name)
-    : RadosParquetFileFormat(std::make_shared<connection::RadosConnection>(
+SkyhookFileFormat::SkyhookFileFormat(const std::string& format,
+                                     const std::string& ceph_config_path,
+                                     const std::string& data_pool,
+                                     const std::string& user_name,
+                                     const std::string& cluster_name,
+                                     const std::string& cls_name)
+    : SkyhookFileFormat(std::make_shared<connection::RadosConnection>(
           connection::RadosConnection::RadosConnectionCtx(
-              ceph_config_path, data_pool, user_name, cluster_name, cls_name))) {}
+              ceph_config_path, data_pool, user_name, cluster_name, cls_name))) {
+                format_ = format;
+              }
 
-RadosParquetFileFormat::RadosParquetFileFormat(
+SkyhookFileFormat::SkyhookFileFormat(
     const std::shared_ptr<connection::RadosConnection>& connection) {
   connection->connect();
   auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>(connection);
   doa_ = doa;
 }
 
-Result<std::shared_ptr<Schema>> RadosParquetFileFormat::Inspect(
+Result<std::shared_ptr<Schema>> SkyhookFileFormat::Inspect(
     const FileSource& source) const {
-  ARROW_ASSIGN_OR_RAISE(auto reader, GetReader(source));
+  std::shared_ptr<FileFormat> format;
+  if (format_ == "parquet") {
+    format = std::make_shared<ParquetFileFormat>();
+  } else if (format_ == "ipc") {
+    format = std::make_shared<IpcFileFormat>();
+  } else {
+    return Status::Invalid("invalid file format");
+  }
   std::shared_ptr<Schema> schema;
-  RETURN_NOT_OK(reader->GetSchema(&schema));
+  ARROW_ASSIGN_OR_RAISE(schema, format->Inspect(source));
   return schema;
 }
 
-Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
+Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
     const std::shared_ptr<ScanOptions>& options,
     const std::shared_ptr<FileFragment>& file) const {
   std::shared_ptr<ScanOptions> options_ = std::make_shared<ScanOptions>(*options);
   options_->partition_expression = file->partition_expression();
   options_->dataset_schema = file->dataset_schema();
-  ScanTaskVector v{std::make_shared<RadosParquetScanTask>(
+
+  if (format_ == "parquet") options_->file_format = 0;
+  if (format_ == "ipc") options_->file_format = 1;
+
+  ScanTaskVector v{std::make_shared<SkyhookScanTask>(
       std::move(options_), std::move(file), file->source(), std::move(doa_))};
   return MakeVectorIterator(v);
 }

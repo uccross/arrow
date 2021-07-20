@@ -205,22 +205,22 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   std::shared_ptr<connection::RadosConnection> connection_;
 };
 
-/// \class RadosParquetFileFormat
+/// \class SkyhookFileFormat
 /// \brief A ParquetFileFormat implementation that offloads the fragment
 /// scan operations to the Ceph OSDs
-class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
+class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
  public:
-  RadosParquetFileFormat(const std::string& ceph_config_path,
-                         const std::string& data_pool, const std::string& user_name,
-                         const std::string& cluster_name, const std::string& cls_name);
+  SkyhookFileFormat(const std::string& format, const std::string& ceph_config_path,
+                    const std::string& data_pool, const std::string& user_name,
+                    const std::string& cluster_name, const std::string& cls_name);
 
-  explicit RadosParquetFileFormat(
+  explicit SkyhookFileFormat(
       const std::shared_ptr<connection::RadosConnection>& conn);
 
-  explicit RadosParquetFileFormat(std::shared_ptr<DirectObjectAccess>& doa)
+  explicit SkyhookFileFormat(std::shared_ptr<DirectObjectAccess>& doa)
       : doa_(std::move(doa)) {}
 
-  std::string type_name() const override { return "rados-parquet"; }
+  std::string type_name() const override { return "skyhook"; }
 
   bool splittable() const { return true; }
 
@@ -253,6 +253,7 @@ class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
 
  protected:
   std::shared_ptr<DirectObjectAccess> doa_;
+  std::string format_; 
 };
 
 /// \brief Serialize scan request to a bufferlist.

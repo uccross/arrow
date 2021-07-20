@@ -23,7 +23,7 @@
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/file_ipc.h"
 #include "arrow/dataset/file_parquet.h"
-#include "arrow/dataset/file_rados_parquet.h"
+#include "arrow/dataset/file_skyhook.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/util/compression.h"
